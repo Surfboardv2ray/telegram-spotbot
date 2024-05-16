@@ -1,0 +1,38 @@
+name: Deploy Telegram Bot
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+#  schedule:
+#    - cron: '0 */x * * *'  # Runs every x hours
+
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60 # Modify based on your need
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.9'
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y ffmpeg
+        python -m pip install --upgrade pip
+        pip install python-telegram-bot==13.11 spotdl spotipy youtube_search
+
+    - name: Run bot script
+      env:
+        TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+        SPOTIFY_CLIENT_SECRET: ${{ secrets.SPOTIFY_CLIENT_SECRET }}
+        SPOTIFY_CLIENT_ID: ${{ secrets.SPOTIFY_CLIENT_ID }}
+      run: python yt+spot.py
