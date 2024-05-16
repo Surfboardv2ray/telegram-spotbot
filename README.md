@@ -2,7 +2,7 @@
 A simple bot to get Spotify's features in Telegram.
 
 # Disclaimer
-This code is developed for educational purposes only and no abusive of any services, either Github, Spotify, or Telegram is instended.
+This code is developed for educational purposes only and no abuse of any services, either Github, Spotify, or Telegram is instended.
 
 # How to
 * Create a telegram bot using [@BotFather](https://t.me/BotFather) and get your bot API token.
