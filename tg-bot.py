@@ -46,6 +46,15 @@ def handle_user_input(update: Update, context: CallbackContext) -> None:
     else:
         update.message.reply_text('Could not find the downloaded song/album/playlist.')
 
+# Function to stop the bot after a certain time of idle user input
+# def check_idle_timeout(context: CallbackContext):
+#     global last_input_time
+#     current_time = time.time()
+#     idle_duration = current_time - last_input_time
+#     if idle_duration > 600:  # Check every 600 secondes
+#         logger.info("Bot idle timeout reached")
+#         updater.stop()  # Stop the updater when idle timeout is reached
+
 # Main function to start the bot
 def main() -> None:
     # Create the Updater and pass it your bot's token
@@ -59,6 +68,9 @@ def main() -> None:
 
     # Start the Bot
     updater.start_polling()
+
+    # Schedule the check_idle_timeout function to run every 600 seconds
+    # updater.job_queue.run_repeating(check_idle_timeout, interval=600, first=0)
 
     # Run the bot until you press Ctrl-C or the process receives SIGINT, SIGTERM, or SIGABRT
     updater.idle()
