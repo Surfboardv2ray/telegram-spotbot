@@ -6,8 +6,6 @@ from telegram.ext import Updater, MessageHandler, Filters, CallbackContext
 import time
 from mutagen.mp3 import MP3
 from mutagen.id3 import ID3, APIC
-from spotdl.metadata_provider import MetadataProvider
-from PIL import Image
 
 # Enable logging
 logging.basicConfig(
@@ -54,13 +52,21 @@ def handle_user_input(update: Update, context: CallbackContext) -> None:
 # Function to embed album art into the MP3 file
 def embed_album_art(file_path):
     audio = MP3(file_path, ID3=ID3)
-    # Fetch album art from the Spotify URL
-    provider = MetadataProvider()
-    album_art_url = provider.get_metadata(file_path)['album_art_uri']
-    image_data = Image.open(provider.get_metadata(file_path)['album_art_uri'])
-    # Embed album art into MP3 file
-    audio.tags.add(APIC(mime='image/jpeg', type=3, desc=u'Cover', data=image_data))
-    audio.save()
+    album_art_path = file_path.replace('.mp3', '.jpg')
+    if os.path.exists(album_art_path):
+        with open(album_art_path, 'rb') as img_file:
+            album_art = APIC(
+                encoding=3,  # 3 is for utf-8
+                mime='image/jpeg',  # image/jpeg or image/png
+                type=3,  # 3 is for the cover image
+                desc=u'Cover',
+                data=img_file.read()
+            )
+        audio.tags.add(album_art)
+        audio.save()
+        os.remove(album_art_path)
+    else:
+        logger.warning(f"Album art not found for {file_path}")
 
 # Main function to start the bot
 def main() -> None:
