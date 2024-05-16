@@ -4,8 +4,6 @@ import logging
 from telegram import Update
 from telegram.ext import Updater, MessageHandler, Filters, CallbackContext
 import time
-from mutagen.mp3 import MP3
-from mutagen.id3 import ID3, APIC
 
 # Enable logging
 logging.basicConfig(
@@ -42,31 +40,11 @@ def handle_user_input(update: Update, context: CallbackContext) -> None:
     # Find the downloaded file/files
     song_files = [f for f in os.listdir('.') if f.endswith('.mp3')]
     if song_files:
-        # Embed album art into the MP3 file(s)
+        # Send the downloaded song(s) back to the user
         for song_file in song_files:
-            embed_album_art(song_file)
             update.message.reply_audio(audio=open(song_file, 'rb'))
     else:
         update.message.reply_text('Could not find the downloaded song/album/playlist.')
-
-# Function to embed album art into the MP3 file
-def embed_album_art(file_path):
-    audio = MP3(file_path, ID3=ID3)
-    album_art_path = file_path.replace('.mp3', '.jpg')
-    if os.path.exists(album_art_path):
-        with open(album_art_path, 'rb') as img_file:
-            album_art = APIC(
-                encoding=3,  # 3 is for utf-8
-                mime='image/jpeg',  # image/jpeg or image/png
-                type=3,  # 3 is for the cover image
-                desc=u'Cover',
-                data=img_file.read()
-            )
-        audio.tags.add(album_art)
-        audio.save()
-        os.remove(album_art_path)
-    else:
-        logger.warning(f"Album art not found for {file_path}")
 
 # Main function to start the bot
 def main() -> None:
@@ -82,7 +60,7 @@ def main() -> None:
     # Start the Bot
     updater.start_polling()
 
-    # Run the bot until you press Ctrl-C or the process receives SIGINT, SIGTERM or SIGABRT
+    # Run the bot until you press Ctrl-C or the process receives SIGINT, SIGTERM, or SIGABRT
     updater.idle()
 
 if __name__ == '__main__':
