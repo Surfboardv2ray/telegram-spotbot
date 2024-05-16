@@ -52,7 +52,9 @@ def handle_user_input(update: Update, context: CallbackContext) -> None:
 # Function to embed album art into the MP3 file
 def embed_album_art(file_path):
     audio = MP3(file_path, ID3=ID3)
-    with open('album_art.jpg', 'rb') as img_file:
+    # Provide the full path to the album art file
+    album_art_path = os.path.join(os.path.dirname(__file__), 'album_art.jpg')
+    with open(album_art_path, 'rb') as img_file:
         album_art = APIC(
             encoding=3,  # 3 is for utf-8
             mime='image/jpeg',  # image/jpeg or image/png
