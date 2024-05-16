@@ -6,6 +6,8 @@ from telegram.ext import Updater, MessageHandler, Filters, CallbackContext
 import time
 from mutagen.mp3 import MP3
 from mutagen.id3 import ID3, APIC
+from spotdl.metadata_provider import MetadataProvider
+from PIL import Image
 
 # Enable logging
 logging.basicConfig(
@@ -52,27 +54,13 @@ def handle_user_input(update: Update, context: CallbackContext) -> None:
 # Function to embed album art into the MP3 file
 def embed_album_art(file_path):
     audio = MP3(file_path, ID3=ID3)
-    # Provide the full path to the album art file
-    album_art_path = os.path.join(os.path.dirname(__file__), 'album_art.jpg')
-    with open(album_art_path, 'rb') as img_file:
-        album_art = APIC(
-            encoding=3,  # 3 is for utf-8
-            mime='image/jpeg',  # image/jpeg or image/png
-            type=3,  # 3 is for the cover image
-            desc=u'Cover',
-            data=img_file.read()
-        )
-    audio.tags.add(album_art)
+    # Fetch album art from the Spotify URL
+    provider = MetadataProvider()
+    album_art_url = provider.get_metadata(file_path)['album_art_uri']
+    image_data = Image.open(provider.get_metadata(file_path)['album_art_uri'])
+    # Embed album art into MP3 file
+    audio.tags.add(APIC(mime='image/jpeg', type=3, desc=u'Cover', data=image_data))
     audio.save()
-
-# Function to periodically check idle time
-# def check_idle_timeout(context: CallbackContext):
-#     global last_input_time
-#     current_time = time.time()
-#     idle_duration = current_time - last_input_time
-#     if idle_duration > 600:  # Check every 10 minutes
-#         logger.info("Bot idle timeout reached")
-#         updater.stop()  # Stop the updater when idle timeout is reached
 
 # Main function to start the bot
 def main() -> None:
@@ -87,9 +75,6 @@ def main() -> None:
 
     # Start the Bot
     updater.start_polling()
-
-    # Schedule the check_idle_timeout function to run every 10 minutes
-    # updater.job_queue.run_repeating(check_idle_timeout, interval=600, first=0)
 
     # Run the bot until you press Ctrl-C or the process receives SIGINT, SIGTERM or SIGABRT
     updater.idle()
