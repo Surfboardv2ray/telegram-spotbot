@@ -1,2 +1,18 @@
-# telegram-spotify-bot
-A simple bot to use Spotify features in Telegram.
+# Introduction
+A simple bot to get Spotify's features in Telegram.
+
+# Disclaimer
+This code is developed for educational purposes only and no abusive of any services, either Github, Spotify, or Telegram is instended.
+
+# How to
+* Create a telegram bot using [@BotFather](https://t.me/BotFather) and get your bot API token.
+* Create an Actions Secret called `TELEGRAM_BOT_TOKEN` and set the value as your bot API token.
+* Make sure you've allowed `Read and Write Permission` to github actions if you're running the workflow.
+* To avoid extended workflow run for free users and avoiding abuse of service, `tg-bot.yml` is set out to cancel the workflow after a limited time. Adjust it under `timeout-minutes`, capped at 6 hours due to Github policies (360 minutes).
+* Run the workflow and `/start` your Telegram bot.
+
+# Running Locally
+* Resources to run locally are available under Releases section.
+* Install dependencies via `requirements.txt`.
+* Edit `tg-bot.py` and replace `YOUR_BOT_TOKEN` with your bot API Token.
+* Run the script and `/start` your Telegram bot.
