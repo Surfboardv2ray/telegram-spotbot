@@ -1,78 +1,54 @@
 import os
-import subprocess
-import logging
-from telegram import Update
-from telegram.ext import Updater, MessageHandler, Filters, CallbackContext
-import time
+import requests
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
+from pytube import YouTube
 
-# Enable logging
-logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.INFO
-)
-logger = logging.getLogger(__name__)
+# Get the Telegram bot token from environment variables
+TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
 
-last_input_time = time.time()
+def start(update, context):
+    update.message.reply_text('Send me a YouTube link and I will download the video and send you a link.')
 
-# Function to handle user input
-def handle_user_input(update: Update, context: CallbackContext) -> None:
-    global last_input_time
-    user_input = update.message.text
-    user = update.message.from_user
-    logger.info(f"User {user.first_name} sent: {user_input}")
-    last_input_time = time.time()  # Update last input time
+def download_youtube_video(url, output_path):
+    yt = YouTube(url)
+    stream = yt.streams.filter(progressive=True, file_extension='mp4').order_by('resolution').desc().first()
+    stream.download(output_path=output_path)
+    return stream.default_filename
 
-    # Check if the input is a Spotify URL
-    if not user_input.startswith("https://open.spotify.com/"):
-        update.message.reply_text('Please send a valid Spotify song, album, or playlist URL.')
-        return
+def upload_to_fileio(file_path):
+    with open(file_path, 'rb') as file:
+        response = requests.post('https://file.io/', files={'file': file})
+        if response.status_code == 200:
+            return response.json().get('link')
+        else:
+            return None
 
-    update.message.reply_text('Downloading your song or songs...')
+def handle_message(update, context):
+    url = update.message.text
+    chat_id = update.message.chat_id
 
-    # Download the song(s)
-    result = subprocess.run(['spotdl', user_input], capture_output=True, text=True)
-    logger.info(f"spotdl command output: {result.stdout}")
-    if result.returncode != 0:
-        logger.error(f"Error downloading song/album/playlist: {result.stderr}")
-        update.message.reply_text('Failed to download the song/album/playlist. Please try again later.')
-        return
-
-    # Find the downloaded file/files
-    song_files = [f for f in os.listdir('.') if f.endswith('.mp3')]
-    if song_files:
-        # Send the downloaded song(s) back to the user
-        for song_file in song_files:
-            update.message.reply_audio(audio=open(song_file, 'rb'))
+    if 'youtube.com' in url or 'youtu.be' in url:
+        update.message.reply_text('Downloading video...')
+        video_file = download_youtube_video(url, './')
+        update.message.reply_text('Uploading to file.io...')
+        fileio_link = upload_to_fileio(video_file)
+        if fileio_link:
+            update.message.reply_text(f'Here is your video: {fileio_link}')
+        else:
+            update.message.reply_text('Failed to upload the video.')
+        os.remove(video_file)
     else:
-        update.message.reply_text('Could not find the downloaded song/album/playlist.')
+        update.message.reply_text('Please send a valid YouTube link.')
 
-# Function to stop the bot after a certain time of idle user input
-# def check_idle_timeout(context: CallbackContext):
-#     global last_input_time
-#     current_time = time.time()
-#     idle_duration = current_time - last_input_time
-#     if idle_duration > 600:  # Check every 600 secondes
-#         logger.info("Bot idle timeout reached")
-#         updater.stop()  # Stop the updater when idle timeout is reached
-
-# Main function to start the bot
-def main() -> None:
-    # Create the Updater and pass it your bot's token
-    updater = Updater(os.getenv('TELEGRAM_BOT_TOKEN'))
-
-    # Get the dispatcher to register handlers
-    dispatcher = updater.dispatcher
-
-    # Register handlers
-    dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, handle_user_input))
-
-    # Start the Bot
+def main():
+    if not TELEGRAM_BOT_TOKEN:
+        raise ValueError("No TELEGRAM_BOT_TOKEN found. Set the TELEGRAM_BOT_TOKEN environment variable.")
+    
+    updater = Updater(TELEGRAM_BOT_TOKEN, use_context=True)
+    dp = updater.dispatcher
+    dp.add_handler(CommandHandler('start', start))
+    dp.add_handler(MessageHandler(Filters.text & ~Filters.command, handle_message))
     updater.start_polling()
-
-    # Schedule the check_idle_timeout function to run every 600 seconds
-    # updater.job_queue.run_repeating(check_idle_timeout, interval=600, first=0)
-
-    # Run the bot until you press Ctrl-C or the process receives SIGINT, SIGTERM, or SIGABRT
     updater.idle()
 
 if __name__ == '__main__':
